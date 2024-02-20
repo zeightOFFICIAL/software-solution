@@ -99,6 +99,7 @@
             this.loadTextbox.Name = "loadTextbox";
             this.loadTextbox.Size = new System.Drawing.Size(353, 30);
             this.loadTextbox.TabIndex = 0;
+            this.loadTextbox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.loadTextbox_KeyPress);
             // 
             // labelForLoadTextbox
             // 
