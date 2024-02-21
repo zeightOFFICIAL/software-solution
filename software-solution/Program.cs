@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace software_solution
@@ -10,14 +6,14 @@ namespace software_solution
     internal static class Program
     {
         /// <summary>
-        /// The main entry point for the application.
+        /// The main entry point for the application.d
         /// </summary>
         [STAThread]
         static void Main()
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());            
+            Application.Run(new Form1());
         }
     }
 }
