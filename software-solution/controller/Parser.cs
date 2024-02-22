@@ -1,6 +1,4 @@
 ﻿using NLog;
-using NLog.Config;
-using NLog.Targets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,9 +7,9 @@ using software_solution.logger;
 
 namespace software_solution.controller
 {
-    public static class Parser
+    public class Parser
     {
-        static Logger lgr = StaticLoggerType.GetStaticLogger();
+        private static readonly Logger logger = new LoggerType().GetLogger();
 
         /// <summary>
         /// Splits string parameter by space and creates a List which contains them.
@@ -19,10 +17,10 @@ namespace software_solution.controller
         /// <param name="plainText">String, plain text to be splited</param>
         /// <returns>List of strings made of splitted plain text</returns>
         private static List<string> SplitPlainText(string plainText) {
-            List<string> PositionsList = plainText.Split(' ').ToList();
-            lgr.Info("SPLIT PLAIN TEXT: "+string.Join(" ", PositionsList));
+            List<string> positionsList = plainText.Split(' ').ToList();
+            logger.Info($"Split okay, list of positions: [{string.Join(",", positionsList)}]");
 
-            return PositionsList;
+            return positionsList;
         }
 
         /// <summary>
@@ -33,8 +31,8 @@ namespace software_solution.controller
         private static void ProcessPositions(ref List<string> positionsList) { 
             for (int eachPosition = 0; eachPosition < positionsList.Count(); eachPosition++)
             {
-                positionsList[eachPosition] = positionsList[eachPosition].ToUpper().Trim().Replace("-", "");
-                lgr.Info("PROCESS POSITIONS: " + positionsList[eachPosition]);
+                positionsList[eachPosition] = positionsList[eachPosition].ToUpper().Trim().Replace("-", "").Replace(" ", "").Replace("\n", "");
+                logger.Info($"Processed position: [{positionsList[eachPosition]}]" + $", indexed as: {eachPosition} -> OKAY");
             }
         }
 
@@ -42,18 +40,19 @@ namespace software_solution.controller
         /// Verify whether each char from the string is a valid hex character,
         /// these including 0-9,A-F.
         /// </summary>
-        /// <param name="position">String to check whether it is hexadecimal</param>
+        /// <param name="solePosition">String to check whether it is hexadecimal</param>
         /// <returns>Return false if any of chars are not hex's otherwise return true</returns>
-        private static bool VerifyHex(string position)
+        private static bool VerifyHex(string solePosition)
         {
             // regex is overkill, imo. URL's methods seems valid enough
-            foreach (char element in position) {
-                if (!Uri.IsHexDigit(element)) {
-                    lgr.Info("VERIFY HEX: " + position + " IS NOT A HEX SINCE - " + element);
+            foreach (char charElement in solePosition) {
+                if (!Uri.IsHexDigit(charElement)) {
+                    logger.Info("Verifying position: " + solePosition + ", is not a hex since -> " + charElement);
                     return false;
                 }
             }
-            lgr.Info("VERIFY HEX: " + position + " IS A HEX");
+            logger.Info("Verifying position: " + solePosition + ", is a valid hex -> OKAY");
+
             return true;
         }
 
@@ -69,25 +68,29 @@ namespace software_solution.controller
         /// or false if any of the positions is wrong and flag to drop is set to false.</returns>
         private static bool VerifyPositions(ref List<string> positionsList, bool dropflag = true)
         {
-            for (int eachPosition = 0; eachPosition < positionsList.Count(); eachPosition++) {
-                if (!VerifyHex(positionsList[eachPosition]) || positionsList[eachPosition].Length != 24) {
-                    if (dropflag) {
-                        lgr.Info($"VERIFY POSITIONS: POSITION[{positionsList[eachPosition]}]:" +
-                            $" DROP SINCE HEX OR LENGTH[{positionsList[eachPosition].Length}]");
-                        positionsList.Remove(positionsList[eachPosition]);
+            for (int eachPosition = 0; eachPosition < positionsList.Count(); eachPosition++) 
+            {
+                if (positionsList[eachPosition].Length != 24 || !VerifyHex(positionsList[eachPosition]))
+                {
+                    if (dropflag) 
+                    {
+                        logger.Info($"Position: [{positionsList[eachPosition]}]:" +
+                            $" drop since hex or length[{positionsList[eachPosition].Length}] not correct");
+                        positionsList[eachPosition] = "";
                     }
-                    else {
-                        lgr.Info($"VERIFY POSITIONS: POSITION[{positionsList[eachPosition]}]:" +
-                            $" STOP SINCE HEX OR LENGTH[{positionsList[eachPosition].Length}]");
+                    else 
+                    {
+                        logger.Info($"Position: [{positionsList[eachPosition]}]:" +
+                            $" stop since hex or length[{positionsList[eachPosition].Length}] not correct");
                         return false;
                     }
                 }
                 else
                 {
-                    lgr.Info($"VERIFY POSITIONS: POSITION[{positionsList[eachPosition]}]: OKAY");
-                    continue;
+                    logger.Info($"Position: [{positionsList[eachPosition]}], valid position -> OKAY");
                 }
             }
+
             return true;
         }
 
@@ -99,12 +102,20 @@ namespace software_solution.controller
         public static List<string> Parse(string plainText)
         {
             var positionsList = SplitPlainText(plainText);
+
             ProcessPositions(ref positionsList);
+
             if (!VerifyPositions(ref positionsList)) {
-                lgr.Info($"PARSE: FINISH STOPPED: []");
+                logger.Info($"Finish and stopped: [], due to dropflag = false");
                 return new List<string>();
             };
-            lgr.Info($"PARSE: FINISH NOT STOPPED: [{string.Join(" ", positionsList)}]");
+
+            // очень странный костыль связанный с пустыми строками при пробелах и escape seqs,
+            // может не работать при очень сложных строках
+            positionsList.RemoveAll(s => s == "");
+
+            logger.Info($"Finish not stopped: all positions: [{string.Join(",", positionsList)}] -> OKAY");
+
             return positionsList;
         }
         

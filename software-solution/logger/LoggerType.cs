@@ -6,34 +6,38 @@ namespace software_solution.logger
 {
     class LoggerType
     {
-        readonly LoggingConfiguration config;
-        readonly ColoredConsoleTarget consoleTarget;
-        readonly FileTarget fileTarget;
-        Logger lgr;
+        readonly LoggingConfiguration localConfig;
+        readonly ColoredConsoleTarget localConsoleTarget;
+        readonly FileTarget localFileTarget;
+        readonly Logger localLogger;
 
         public LoggerType()
         {
-            config = new LoggingConfiguration();
-            consoleTarget = new ColoredConsoleTarget()
+            localConfig = new LoggingConfiguration();
+
+            localConsoleTarget = new ColoredConsoleTarget()
             {
-                Layout = "${longdate} ${level} ${message}"
+                Layout = "${longdate} AS ${level} WITH ${message}"
             };
-            config.AddTarget("console", consoleTarget);
-            config.AddRuleForAllLevels(consoleTarget);
-            fileTarget = new FileTarget()
+            localConfig.AddTarget("console", localConsoleTarget);
+            localConfig.AddRuleForAllLevels(localConsoleTarget);
+
+            localFileTarget = new FileTarget("ads")
             {
-                Layout = "${longdate} ${level} ${message}",
-                FileName = "logs/${shortdate}_nonstatic.log"
+                Layout = "${callsite:classname=true:includenamespace=false:methodName=true} FROM ${longdate} AS ${level} WITH ${message}",
+                FileName = "logs/${callsite:classname=true:includenamespace=false:methodName=false} from ${shortdate}.log",
             };
-            config.AddTarget("file", fileTarget);
-            config.AddRuleForAllLevels(fileTarget);
-            LogManager.Configuration = config;
-            lgr = LogManager.GetCurrentClassLogger();
+            localConfig.AddTarget("file", localFileTarget);
+            localConfig.AddRuleForAllLevels(localFileTarget);
+
+            LogManager.Configuration = localConfig;
+            localLogger = LogManager.GetCurrentClassLogger();
         }
 
         public Logger GetLogger()
         {
-            return lgr;
+            localLogger.Info("Logger init");
+            return localLogger;
         }
     }
 }
